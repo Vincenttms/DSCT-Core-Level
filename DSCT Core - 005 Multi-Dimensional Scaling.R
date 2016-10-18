@@ -9,31 +9,27 @@ head(UScereal)
 
 # first need to convert the data into a distance matrix
 # euclidean distances between the rows
-d <- dist(UScereal[,1:10], method = "euclidean", diag=TRUE)
-
+< ... enter your code ... >
+  
 # Apply classical MDS 
-fit <- cmdscale(d, eig=TRUE, k=2) # k is the number of dim
+< ... enter your code ... >
 fit # view results
 
 # visualise in 2D using labels
-autoplot(fit, shape = FALSE, label.colour = 'blue', label.size = 3)
-
+< ... enter your code ... >
+  
 # visualise using ggplot
-ggplot(as.data.frame(fit$points), aes(fit$points[,1], -fit$points[,2], label = rownames(fit$points))) +
-  geom_text(check_overlap = TRUE, size=3) +
-  #xlab('Log10(V1)') + ylab('Log10(V2)') +
-  #scale_x_continuous(breaks = NULL, trans='log2') +
-  #scale_y_continuous(breaks = NULL, trans='log2')
-  xlab('V1') + ylab('V2')
-
+< ... enter your code ... >
+  
 
 # visualise in 3D
-isoFit <- isoMDS(d, k=3) # k is the number of dim
+< ... enter your code ... >
 isoFit # view results
 
-library(rgl)
-plot3d(isoFit$points, size=5)
 
+library(rgl)
+< ... enter your code ... >
+  
 
 require(igraph)
 library(igraph)
