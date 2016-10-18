@@ -22,11 +22,11 @@ library(biganalytics)
 library(cluster)
 
 # set working directory
-setwd("D:\\Projects\\Data Science Competency\\Curriculum\\00 Core\\src\\")
+setwd("/Users/ianlo/Work/Projects/Data Science Competency/Curriculum/00 Core/src/")
 
 
 # read csv data file
-bkgs <- read.csv2("ypedia\\Sample.csv", header = TRUE, sep=",",
+bkgs <- read.csv2("ypedia/Sample.csv", header = TRUE, sep=",",
                   stringsAsFactors = TRUE)
 
 
@@ -47,91 +47,117 @@ bkgs$srch_co <- as.POSIXct(bkgs$srch_co, format = "%Y-%m-%d")
 
 # Summary of the Data
 # view a summary of the raw data
-  < ... enter your code ... >
+head(bkgs)
 
-  
 # looking at summary statistics for the entire data set
-  < ... enter your code ... >
-  
-  
+summary(bkgs)
+
 # looking at summary statistics for srch_adult_cnt and srch_children_cnt
-  < ... enter your code ... >
-  
-  
+summary(bkgs[,c("srch_adults_cnt","srch_children_cnt")])
+
 # using the pastecs package to generate descriptive statistics
-  < ... enter your code ... >
-  
-  
+stat.desc(bkgs)
+
 # using moments package to show kurtosis and skewness
 # kurtosis is a measure of the peakedness of the data distribution.
 # Negative kurtosis would indicates a flat data distribution, which is said to be platykurtic.
 # Positive kurtosis would indicates a peaked distribution, which is said to be leptokurtic
-  < ... enter your code ... >
+kurtosis(bkgs[,c("srch_adults_cnt","srch_children_cnt")])
 
-  
 # Intuitively, the skewness is a measure of symmetry.
 # As a rule, negative skewness indicates that the mean of the data values is less than the median,
 # and the data distribution is left-skewed.
 # Positive skewness would indicates that the mean of the data values is larger than the median,
 # and the data distribution is right-skewed. 
-  < ... enter your code ... >
-  
+skewness(bkgs[,c("srch_adults_cnt","srch_children_cnt")])
 
 # no. of distinct country, region and city the users are from
-  < ... enter your code ... >
-  
-  
+bkgs %>%
+  filter(!is.na(user_location_country)) %>%
+  summarise_each(funs(min, max, n_distinct),
+                 user_location_country,
+                 user_location_region,
+                 user_location_city,
+                 site_name)
+
 # how many records have srch_adults_cnt == 0? What is the percentage?
 # In US minors can travel alone
-  < ... enter your code ... >
-  
-  
+nrow(bkgs[bkgs$srch_adults_cnt == 0,])/nrow(bkgs)
+
 # Method 1:
 # any searches with BOTH srch_adults_cnt and srch_children_cnt == 0?
 # may be erronous data
-  < ... enter your code ... >
-  
-  
+nrow(bkgs[(bkgs$srch_adults_cnt == 0) & (bkgs$srch_children_cnt == 0),])/nrow(bkgs)
+
 # Method 2:
 # An alternate way of presenting if there are  any searches with BOTH srch_adults_cnt
 # and srch_children_cnt == 0? may be erronous data
-  < ... enter your code ... >
-  
-  
+bkgs %>%
+  filter((srch_adults_cnt == 0) & (srch_children_cnt == 0)) %>%
+  summarise((n()/nrow(bkgs))*100) %>%
+  sprintf("Percentage of rows with both srch_adults_cnt and srch_children_cnt are 0: %f", .)
+
 # Method 3:
 # tabulate to see of there are any records with both adults and children == 0
-  < ... enter your code ... >
-  
-  
+table(bkgs$srch_adults_cnt, bkgs$srch_children_cnt, dnn=c("srch_adults_cnt","srch_children_cnt"))
+
 # see the specific statistics for the search count for adults and children
 # (include removing 0 records)
-  < ... enter your code ... >
-  
-  
+bkgs %>%
+#  filter(!is.na(srch_adults_cnt) & srch_adults_cnt > 0) %>%
+  filter(!is.na(srch_adults_cnt) & !((srch_adults_cnt == 0) & (srch_children_cnt == 0))) %>%
+  summarise_each(funs(mean, median, min, max, n_distinct), srch_adults_cnt, srch_children_cnt)
+
 # find the unique counts for each column in the data (except X and date_time)
-  < ... enter your code ... >
-  
+bkgs %>%
+  #  filter(!is.na(srch_adults_cnt) & srch_adults_cnt > 0) %>%
+  filter(!is.na(srch_adults_cnt) & !((srch_adults_cnt == 0) & (srch_children_cnt == 0))) %>%
+  summarise_each(funs(n_distinct), -(X:date_time))
 
 
 
-##################################################################################
+
+
 # Exploring the shape of the data
-##################################################################################
-  
+
 
 # bar plot of booking transactions by continent
-  < ... enter your code ... >
-  
+# code for ggplot 1.0.1
+ggplot(bkgs,
+       aes(x=as.factor(posa_continent), y=..count..)) +
+  geom_bar(fill="blue", binwidth=1)
+
+# code for ggplot 2.1.0
+ggplot(bkgs,
+       aes(x=as.factor(posa_continent), y=..count..)) +
+  geom_bar(fill="blue", binwidth=NULL, stat="count")
+
 
 
 # histogram plot of srch_adults_cnt overlayed with the density plot
-  < ... enter your code ... >
-  
+ggplot(bkgs, aes(bkgs$srch_adults_cnt)) +
+  geom_histogram(aes(y=..density.., fill=..count..), 
+                 colour = "black", binwidth=1.0) +
+  scale_fill_gradient("Count", low="light blue", high="dark blue") +
+  stat_function(fun=dnorm,
+                color="red",
+                args=list(mean=mean(bkgs$srch_adults_cnt), 
+                          sd=sd(bkgs$srch_adults_cnt))) + 
+  scale_x_discrete(name="Search Adult Count", c(0:10))
+
 
 
 # histogram plot of srch_adults_cnt overlayed with the density plot
-  < ... enter your code ... >
-  
+ggplot(bkgs, aes(bkgs$srch_children_cnt)) +
+  geom_histogram(aes(y=..density.., fill=..count..), 
+                 colour = "black", binwidth=1.0) +
+  scale_fill_gradient("Count", low="light blue", high="dark blue") +
+  stat_function(fun=dnorm,
+                color="red",
+                args=list(mean=mean(bkgs$srch_children_cnt), 
+                          sd=sd(bkgs$srch_children_cnt))) + 
+  scale_x_discrete(name="Search Children Count", c(0:10))
+
 
 
 # view the histogram of the following attributes
@@ -156,30 +182,61 @@ remove(d)
 # distribution of the no. of booking attempts - need to find for each customer
 # how many bookings made, group by the no.of bookings and then count the no. of customers
 # within each group
-  < ... enter your code ... >
-  
+bkgs %>%
+  group_by(as.factor(user_id)) %>%
+  summarise(a = n()) %>%
+  group_by(grp1 = as.factor(a)) %>%
+  summarise(b = n()) %>%
+  ggplot(aes(x = grp1, y = b)) +
+    # for ggplot2 2.x.x and above use geom_bar. For ggplot2 1.0.1 you can still use geom_histogram
+    geom_bar(fill = "blue", binwidth = NULL, stat = "identity", alpha = 0.7) +
+    labs(title="Distribution of Booking Attempts") +
+    labs(x="Booking Attempts", y="No. of Attempts")
+
 
 
 # distribution of the booking rate
-  < ... enter your code ... >
+bkgs %>%
+  group_by(user_id = as.factor(user_id)) %>%
+  summarise(c = mean(is_booking)) %>%
+  group_by(grp2 = as.factor(round(c,2))) %>%
+  summarise(d=n()) %>%
+  ggplot(aes(x=grp2, y=d)) + 
+    geom_line(aes(group = 1), colour="red", size=0.5) +
+    geom_point(shape=20) +
+    labs(title="Distribution of Booking Rate") +
+    labs(x="mean", y="No. of Users") +
+    scale_y_continuous(name="No. of Users", breaks=seq(0,85000,10000))
+
 
 
 # Add a new feature called srch_mth to capture month only
 # note as.Date does not support fractional dates
 bkgs$srch_mth <- strftime(bkgs$srch_date, "%Y-%m")
 
-
-
 # distribution of the no. of searches by day
-  < ... enter your code ... >
-  
+bkgs %>%
+  group_by(s = as.factor(as.character(srch_date))) %>%
+  summarise(srch_cnt = n(), bkg_cnt = sum(is_booking)) %>%
+  melt(.) %>%
+  ggplot(aes(x=as.Date(s), y=value)) + 
+  # for ggplot2 2.x.x and above use geom_bar. For ggplot2 1.0.1 you can still use geom_histogram
+  #geom_histogram(aes(fill=variable), binwidth = 1.0, stat = "identity", alpha = 0.7) +
+  geom_bar(aes(fill=variable), stat = "identity", alpha = 0.7) +
+  labs(title="Distribution of Searches by Date") +
+  labs(x="Date", y="No. of Search Attempts") +
+  facet_wrap(~ variable, scales = "free")
 
 
 # strong correlation at the day level between searches and bookings
-  < ... enter your code ... >
+bkgs %>%
+  group_by(s = as.factor(as.character(srch_date))) %>%
+  summarise(srch_cnt = n(), bkg_cnt = sum(is_booking)) %>%
+  select(srch_cnt, bkg_cnt) %>%
+  corr(.)
 
 
-  
+
 # distribution of the no. of searches by year - month
 bkgs %>%
   group_by(s = as.factor(as.character(srch_mth))) %>%
@@ -209,13 +266,17 @@ labels <- c("0" = "Continent 0", "1" = "Continent 1",
             "2" = "Continent 2", "3" = "Continent 3",
             "4" = "Continent 4", "5" = "Continent 5",
             "6" = "Continent 6")
-  < ... enter your code ... >
-  
+ggplot(bkgs, aes(x = user_location_city,
+                 y = hotel_market)) +
+  geom_point(colour="blue", shape=20) +
+  facet_grid(~ hotel_continent, labeller=labeller(hotel_continent = labels))
+
 
 
 # Spinning 3d Scatterplot
-  < ... enter your code ... >
-  
+library(rgl)
+plot3d(bkgs$user_location_city, bkgs$hotel_market, bkgs$hotel_continent, col="red", size=3) 
+
 
 
 
@@ -265,31 +326,29 @@ dev.off()               # close the PNG device
 # Data Validation
 
 # Are there any records where the srch_co is < srch_ci?
-  < ... enter your code ... >
+bkgs %>% filter(srch_co < srch_ci)
 
-  
 # Are there any records where the srch_ci < srch_date(date_time)
-  < ... enter your code ... >
+bkgs %>% filter(srch_ci < srch_date)
 
-  
 # Exclude these data from analysis (take note of the boolean logic)
-  < ... enter your code ... >
-  
+bkgsNew <- bkgs %>% filter( !((srch_co < srch_ci) | (srch_ci < srch_date)) )
 
-############################################################################
+
 # Feature Engineering
-############################################################################
+
 # Already added srch_date and srch_mth from previous steps. Now we add more
 # derived features
 
 # Create duration (srch_co - srch_ci) feature
-  < ... enter your code ... >
-  
+bkgsNew$duration <- as.integer(bkgsNew$srch_co - bkgsNew$srch_ci)/60/60/24
+
 # Create days_in_adv (srch_ci - srch_date) feature
-  < ... enter your code ... >
-  
+bkgsNew$days_in_adv <- as.integer(bkgsNew$srch_ci - bkgsNew$srch_date)/60/60/24
+
 # By adding new features, new outliers can be identified using a scatterplot
-  < ... enter your code ... >
+ggplot(bkgsNew, aes(y=duration, x=days_in_adv)) +
+  geom_point(aes(colour=duration))
   
 
 # Looking at the mean booking rate by segments and compare with the overall
@@ -368,7 +427,9 @@ tableMeans <- function(x, y, overall_mean)
     group_by_(s = y) %>%
     summarise(mean = mean(is_booking)) %>%
     ggplot(aes(x=s, y=mean)) +
-      geom_histogram(aes(fill=mean), stat = "identity", alpha = 0.7) +
+    # for ggplot2 2.x.x and above use geom_bar. For ggplot2 1.0.1 you can still use geom_histogram
+    #  geom_histogram(aes(fill=mean), stat = "identity", alpha = 0.7) +
+    geom_bar(aes(fill=mean), stat = "identity", alpha = 0.7) +
     #      scale_fill_continuous(low="light blue", high="dark blue", breaks=overall_mean) +
       scale_fill_gradient2(low="red", midpoint = overall_mean, mid = "white") + 
       labs(x=y)
@@ -387,9 +448,8 @@ multiplot(plotlist = plots[1:3],
 
 
 
-#####################################################################
+
 # Some EDA Clustering Techniques
-#####################################################################
 
 bkgsCl <- dplyr::select(bkgsNew,
                         -(X:date_time),
@@ -397,7 +457,6 @@ bkgsCl <- dplyr::select(bkgsNew,
                         -(srch_ci:srch_co),
                         -cnt,
                         -(srch_date:srch_mth))
-
 
 # Hierarichal Clustering
 # if we use the whole 100k records, the calculation will take too long
@@ -417,7 +476,6 @@ plot(h)
 
 
 
-
 # set seed to ensure results are reproduciable
 set.seed(12345)
 
@@ -427,7 +485,7 @@ bkgsCl <- as.data.frame(scale(bkgsCl))
 
 # using standard k-means in R (scaled)
 library(ggfortify)
-km <- kmeans(bkgsCl, 3, iter.max = 25, nstart = 5, algorithm="Hartigan-Wong")
+km <- kmeans(bkgsCl, 5, iter.max = 25, nstart = 5, algorithm="Hartigan-Wong")
 autoplot(km, data = bkgsCl)
 
 
@@ -442,10 +500,17 @@ fit <- principal(bkgsCl, nfactors=3, rotate="varimax", scores=TRUE)
 
 # before doing k-means, we need to scale the data so that no one variable
 # has an oversized loading
-  < ... enter your code ... >
+km <- bigkmeans(as.big.matrix(bkgsCl), 3, iter.max = 25, nstart = 5, dist = "euclid")
+bkgsCl$kmCluster=factor(km$cluster)
+centers=as.data.frame(km$centers)
 
-  
+ggplot(bkgsCl, aes(x=fit$scores[,1], y=fit$scores[,2], color=bkgsCl$kmCluster)) +
+    geom_point()
+
+
 # We can also plot the principle components in 3D space using the first
 # 3 loadings - we tag each species with a colour and then use it to visualise
-  < ... enter your code ... >
-  
+library(rgl)
+values <- c("red", "green", "blue")
+bkgsCl$colour <- values[bkgsCl$kmCluster]
+plot3d(fit$scores[,1:3], col = bkgsCl$colour, size=5)
