@@ -169,17 +169,10 @@ remove(d)
 bkgs$srch_mth <- strftime(bkgs$srch_date, "%Y-%m")
 
 
-# distribution of the no. of searches by day
-bkgs %>%
-  group_by(s = as.factor(as.character(srch_date))) %>%
-  summarise(srch_cnt = n(), bkg_cnt = sum(is_booking)) %>%
-  melt(.) %>%
-  ggplot(aes(x=as.Date(s), y=value)) + 
-  geom_histogram(aes(fill=variable), binwidth = 1.0, stat = "identity", alpha = 0.7) +
-  labs(title="Distribution of Searches by Date") +
-  labs(x="Date", y="No. of Search Attempts") +
-  facet_wrap(~ variable, scales = "free")
 
+# distribution of the no. of searches by day
+  < ... enter your code ... >
+  
 
 
 # strong correlation at the day level between searches and bookings
@@ -216,17 +209,13 @@ labels <- c("0" = "Continent 0", "1" = "Continent 1",
             "2" = "Continent 2", "3" = "Continent 3",
             "4" = "Continent 4", "5" = "Continent 5",
             "6" = "Continent 6")
-ggplot(bkgs, aes(x = user_location_city,
-                 y = hotel_market)) +
-  geom_point(colour="blue", shape=20) +
-  facet_grid(~ hotel_continent, labeller=labeller(hotel_continent = labels))
-
+  < ... enter your code ... >
+  
 
 
 # Spinning 3d Scatterplot
-library(rgl)
-plot3d(bkgs$user_location_city, bkgs$hotel_market, bkgs$hotel_continent, col="red", size=3) 
-
+  < ... enter your code ... >
+  
 
 
 
@@ -276,29 +265,31 @@ dev.off()               # close the PNG device
 # Data Validation
 
 # Are there any records where the srch_co is < srch_ci?
-bkgs %>% filter(srch_co < srch_ci)
+  < ... enter your code ... >
 
+  
 # Are there any records where the srch_ci < srch_date(date_time)
-bkgs %>% filter(srch_ci < srch_date)
+  < ... enter your code ... >
 
+  
 # Exclude these data from analysis (take note of the boolean logic)
-bkgsNew <- bkgs %>% filter( !((srch_co < srch_ci) | (srch_ci < srch_date)) )
+  < ... enter your code ... >
+  
 
-
+############################################################################
 # Feature Engineering
-
+############################################################################
 # Already added srch_date and srch_mth from previous steps. Now we add more
 # derived features
 
 # Create duration (srch_co - srch_ci) feature
-bkgsNew$duration <- as.integer(bkgsNew$srch_co - bkgsNew$srch_ci)/60/60
-
+  < ... enter your code ... >
+  
 # Create days_in_adv (srch_ci - srch_date) feature
-bkgsNew$days_in_adv <- as.integer(bkgsNew$srch_ci - bkgsNew$srch_date)/60/60
-
+  < ... enter your code ... >
+  
 # By adding new features, new outliers can be identified using a scatterplot
-ggplot(bkgsNew, aes(y=duration, x=days_in_adv)) +
-  geom_point(aes(colour=duration))
+  < ... enter your code ... >
   
 
 # Looking at the mean booking rate by segments and compare with the overall
@@ -396,8 +387,9 @@ multiplot(plotlist = plots[1:3],
 
 
 
-
+#####################################################################
 # Some EDA Clustering Techniques
+#####################################################################
 
 bkgsCl <- dplyr::select(bkgsNew,
                         -(X:date_time),
@@ -405,6 +397,7 @@ bkgsCl <- dplyr::select(bkgsNew,
                         -(srch_ci:srch_co),
                         -cnt,
                         -(srch_date:srch_mth))
+
 
 # Hierarichal Clustering
 # if we use the whole 100k records, the calculation will take too long
@@ -421,6 +414,7 @@ index <- createDataPartition(bkgsCl$is_booking, p = .001,
 bkgsHCSamp <- bkgsCl[index]
 h <- Rclusterpp.hclust(bkgsHCSamp, method="average", distance="euclidean") 
 plot(h)
+
 
 
 
@@ -448,17 +442,10 @@ fit <- principal(bkgsCl, nfactors=3, rotate="varimax", scores=TRUE)
 
 # before doing k-means, we need to scale the data so that no one variable
 # has an oversized loading
-km <- bigkmeans(as.big.matrix(bkgsCl), 3, iter.max = 25, nstart = 5, dist = "euclid")
-bkgsCl$kmCluster=factor(km$cluster)
-centers=as.data.frame(km$centers)
+  < ... enter your code ... >
 
-ggplot(bkgsCl, aes(x=fit$scores[,1], y=fit$scores[,2], color=bkgsCl$kmCluster)) +
-    geom_point()
-
-
+  
 # We can also plot the principle components in 3D space using the first
 # 3 loadings - we tag each species with a colour and then use it to visualise
-library(rgl)
-values <- c("red", "green", "blue")
-bkgsCl$colour <- values[bkgsCl$kmCluster]
-plot3d(fit$scores[,1:3], col = bkgsCl$colour, size=5)
+  < ... enter your code ... >
+  
